@@ -3,7 +3,7 @@ import os
 import pg8000.native
 
 
-def lambda_handler(event, context):
+def handler(event, context):
     db_user = "postgres"
     db_password = os.environ["ARXIN_DB_PASS"]
     db_url = os.environ["ARXIN_DB_URL"]
