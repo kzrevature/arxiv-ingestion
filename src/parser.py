@@ -1,7 +1,10 @@
+import logging
 import re
 from xml.etree import ElementTree as ET
 
 from article import Article
+
+LOG = logging.getLogger()
 
 
 def parse_entry_to_article(node: ET.Element):
@@ -71,16 +74,20 @@ def parse_arxiv_url_to_id(article_url):
 
     # check prefix
     if not article_url.startswith(arxiv_url_prefix):
-        raise ValueError("arXiv url is malformed: bad prefix")
-    article_url = article_url[len(arxiv_url_prefix) :]
+        error_message = f"arXiv url is malformed (bad prefix): {article_url}"
+        LOG.warning(error_message)
+        raise ValueError(error_message)
+    article_id = article_url[len(arxiv_url_prefix) :]
 
     # check version suffix
     suffix_re = "v\\d+$"
-    suffix_re_match = re.search(suffix_re, article_url)
+    suffix_re_match = re.search(suffix_re, article_id)
     if suffix_re_match:
-        article_url = article_url[: suffix_re_match.start()]
+        article_id = article_id[: suffix_re_match.start()]
 
-    if validate_arxiv_id_new_fmt(article_url) or validate_arxiv_id_old_fmt(article_url):
-        return article_url
+    if validate_arxiv_id_new_fmt(article_id) or validate_arxiv_id_old_fmt(article_id):
+        return article_id
     else:
-        raise ValueError("arXiv url is malformed: bad id")
+        error_message = f"arXiv url is malformed (bad id): {article_id}"
+        LOG.warning(error_message)
+        raise ValueError(error_message)

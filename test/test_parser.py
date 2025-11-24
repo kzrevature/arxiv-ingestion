@@ -1,3 +1,5 @@
+import logging
+from logging import WARN
 from parser import (
     parse_arxiv_url_to_id,
     validate_arxiv_id_new_fmt,
@@ -142,15 +144,21 @@ def test_parse_arxiv_url_to_id_accepts_extracts_url_stripping_version_number():
     assert expected == actual
 
 
-def test_parse_arxiv_url_to_id_rejects_bad_prefix():
+def test_parse_arxiv_url_to_id_rejects_bad_prefix(caplog):
     bad_url = "http://NOT-arxiv.org/abs/1122.3344v1"
 
     with pytest.raises(ValueError):
         parse_arxiv_url_to_id(bad_url)
 
+    assert len(caplog.records) == 1
+    assert caplog.records[0].levelno == logging.WARN
 
-def test_parse_arxiv_url_to_id_rejects_bad_id():
+
+def test_parse_arxiv_url_to_id_rejects_bad_id(caplog):
     bad_url = "http://arxiv.org/abs/112233.445566v7"
 
     with pytest.raises(ValueError):
         parse_arxiv_url_to_id(bad_url)
+
+    assert len(caplog.records) == 1
+    assert caplog.records[0].levelno == logging.WARN
