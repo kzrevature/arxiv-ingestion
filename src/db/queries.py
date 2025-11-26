@@ -1,6 +1,3 @@
-from datetime import datetime
-from time import strftime
-
 from pg8000.native import Connection
 
 from article import Article
@@ -13,7 +10,7 @@ def drop_article_table(conn: Connection):
     """
     Drops the Article table.
 
-    Fails silently if the table does not exist.
+    Fails silently (no-op) if the table does not exist.
     """
     query_str = "DROP TABLE IF EXISTS Article;"
     conn.run(query_str)
@@ -29,6 +26,8 @@ def create_article_table(conn: Connection):
         title:          VARCHAR(255)
         created_at:     TIMESTAMP
         updated_at:     TIMESTAMP
+
+    Errors if the table already exists.
     """
 
     query_str = (
@@ -58,4 +57,4 @@ def insert_article(conn: Connection, article: Article) -> list:
         "updated_at": article.updated_at.strftime(PG_TIME_FMT),
     }
 
-    return conn.run(query_str, **param_kwargs)
+    conn.run(query_str, **param_kwargs)
