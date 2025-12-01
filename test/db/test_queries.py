@@ -2,12 +2,12 @@ from datetime import datetime
 from typing import Generator
 
 import pytest
-from pg8000 import Connection, DatabaseError
+from pg8000 import DatabaseError
 from testcontainers.postgres import PostgresContainer
 
 from article import Article
+from db.connection import Pg8000Connection
 from db.queries import create_article_table, drop_article_table, insert_article
-from db.utils import create_connection
 
 
 @pytest.fixture(scope="module")
@@ -17,22 +17,19 @@ def pg_container():
 
 
 @pytest.fixture
-def conn(pg_container) -> Generator[Connection]:
-    with create_connection(
-        user=pg_container.username,
+def conn(pg_container) -> Generator[Pg8000Connection]:
+    with Pg8000Connection(
         port=pg_container.get_exposed_port(5432),
+        user=pg_container.username,
         password=pg_container.password,
         url=pg_container.get_container_host_ip(),
     ) as conn:
-
         # reset entire pg schema
         conn.run("DROP SCHEMA public CASCADE; CREATE SCHEMA public;")
-
         yield conn
 
 
 def test_drop_article_table(conn):
-
     conn.run("CREATE TABLE Article();")
 
     drop_article_table(conn)
@@ -43,14 +40,12 @@ def test_drop_article_table(conn):
 
 
 def test_drop_article_table_noop_when_missing(conn):
-
     # even though Article table doesn't exist yet
     # this shouldn't error
     drop_article_table(conn)
 
 
 def test_create_article_table(conn):
-
     expected_res = []
 
     create_article_table(conn)
@@ -60,7 +55,6 @@ def test_create_article_table(conn):
 
 
 def test_create_article_table_fails_if_already_exists(conn):
-
     conn.run("CREATE TABLE Article();")
 
     with pytest.raises(DatabaseError):
@@ -68,7 +62,6 @@ def test_create_article_table_fails_if_already_exists(conn):
 
 
 def test_insert_article(conn):
-
     id_ = "id_123"
     title = "title_123"
     created_at = datetime(2025, 8, 8)
@@ -86,7 +79,6 @@ def test_insert_article(conn):
 
 
 def test_insert_article_fails_on_duplicate_id(conn):
-
     id_common = "id_123"
     title_1 = "title_999"
     title_2 = "title_888"

@@ -15,13 +15,13 @@ def build_query_mock():
 
 @pytest.fixture
 def http_get_mock():
-    with patch("requests.get") as mock:
+    with patch("arxiv.request.requests.get") as mock:
         yield mock
 
 
 @pytest.fixture
 def etree_fromstring_mock():
-    with patch("xml.etree.ElementTree.fromstring") as mock:
+    with patch("arxiv.request.ET.fromstring") as mock:
         yield mock
 
 

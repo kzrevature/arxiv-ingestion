@@ -1,6 +1,5 @@
-from pg8000.native import Connection
-
 from article import Article
+from db.connection import Connection
 
 PG_TIME_FMT = "%Y-%m-%d %H:%M:%S"
 
@@ -12,6 +11,7 @@ def drop_article_table(conn: Connection):
 
     Fails silently (no-op) if the table does not exist.
     """
+
     query_str = "DROP TABLE IF EXISTS Article;"
     conn.run(query_str)
 
@@ -38,13 +38,15 @@ def create_article_table(conn: Connection):
         "   updated_at     TIMESTAMP"
         ");"
     )
+
     conn.run(query_str)
 
 
-def insert_article(conn: Connection, article: Article) -> list:
+def insert_article(conn: Connection, article: Article):
     """
-    Inserts an Article object into the Article table on a given Postgres connection.
+    Inserts an Article object into the Article table.
     """
+
     query_str = (
         "INSERT INTO Article (id, title, created_at, updated_at)"
         "VALUES (:id, :title, :created_at, :updated_at)"
