@@ -4,12 +4,8 @@ from logging import WARN
 
 import pytest
 
-from arxiv.parser import (
-    extract_article_entries,
-    parse_arxiv_url_to_id,
-    validate_arxiv_id_new_fmt,
-    validate_arxiv_id_old_fmt,
-)
+from arxiv.parser import (extract_article_entries, parse_arxiv_url_to_id,
+                          validate_arxiv_id_new_fmt, validate_arxiv_id_old_fmt)
 
 
 @pytest.fixture()

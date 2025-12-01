@@ -2,40 +2,38 @@ from datetime import datetime
 from typing import Generator
 
 import pytest
-from pg8000 import Connection, DatabaseError
+from pg8000 import DatabaseError
 from testcontainers.postgres import PostgresContainer
 
 from article import Article
-from db.queries import create_article_table, drop_article_table, insert_article
-from db.utils import create_connection
+from db.connection import Connection
+from db.connection_manager import ConnectionManager
+from db.queries import create_article_table, drop_article_table, insert_article_record
 
 
 @pytest.fixture(scope="module")
 def pg_container():
     with PostgresContainer("postgres:16.10") as pg:
+        ConnectionManager.configure(
+            user=pg.username,
+            port=pg.get_exposed_port(5432),
+            password=pg.password,
+            url=pg.get_container_host_ip(),
+        )
         yield pg
 
 
 @pytest.fixture
 def conn(pg_container) -> Generator[Connection]:
-    with create_connection(
-        user=pg_container.username,
-        port=pg_container.get_exposed_port(5432),
-        password=pg_container.password,
-        url=pg_container.get_container_host_ip(),
-    ) as conn:
-
-        # reset entire pg schema
-        conn.run("DROP SCHEMA public CASCADE; CREATE SCHEMA public;")
-
-        yield conn
+    conn = ConnectionManager.get_connection()
+    conn.run("DROP SCHEMA public CASCADE; CREATE SCHEMA public;")
+    return conn
 
 
 def test_drop_article_table(conn):
-
     conn.run("CREATE TABLE Article();")
 
-    drop_article_table(conn)
+    drop_article_table()
 
     # Article table is dropped so this should error
     with pytest.raises(DatabaseError):
@@ -43,32 +41,28 @@ def test_drop_article_table(conn):
 
 
 def test_drop_article_table_noop_when_missing(conn):
-
     # even though Article table doesn't exist yet
     # this shouldn't error
-    drop_article_table(conn)
+    drop_article_table()
 
 
 def test_create_article_table(conn):
-
     expected_res = []
 
-    create_article_table(conn)
+    create_article_table()
 
     actual_res = conn.run("SELECT * FROM Article;")
     assert expected_res == actual_res
 
 
 def test_create_article_table_fails_if_already_exists(conn):
-
     conn.run("CREATE TABLE Article();")
 
     with pytest.raises(DatabaseError):
-        create_article_table(conn)
+        create_article_table()
 
 
-def test_insert_article(conn):
-
+def test_insert_article_record(conn):
     id_ = "id_123"
     title = "title_123"
     created_at = datetime(2025, 8, 8)
@@ -77,16 +71,15 @@ def test_insert_article(conn):
 
     expected = [[id_, title, created_at, updated_at]]
 
-    create_article_table(conn)
-    insert_article(conn, test_article)
+    create_article_table()
+    insert_article_record(test_article)
 
     actual = conn.run("SELECT id, title, created_at, updated_at FROM Article;")
 
     assert actual == expected
 
 
-def test_insert_article_fails_on_duplicate_id(conn):
-
+def test_insert_article_record_fails_on_duplicate_id(conn):
     id_common = "id_123"
     title_1 = "title_999"
     title_2 = "title_888"
@@ -97,8 +90,8 @@ def test_insert_article_fails_on_duplicate_id(conn):
     article_1 = Article(id_common, title_1, created_at_1, updated_at_1)
     article_2 = Article(id_common, title_2, created_at_2, updated_at_2)
 
-    create_article_table(conn)
-    insert_article(conn, article_1)
+    create_article_table()
+    insert_article_record(article_1)
 
     with pytest.raises(DatabaseError):
-        insert_article(conn, article_2)
+        insert_article_record(article_2)
