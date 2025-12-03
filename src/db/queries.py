@@ -48,7 +48,7 @@ def insert_article(conn: Connection, article: Article):
     """
 
     query_str = (
-        "INSERT INTO Article (id, title, created_at, updated_at)"
+        "INSERT INTO Article (id, title, created_at, updated_at) "
         "VALUES (:id, :title, :created_at, :updated_at)"
     )
 
@@ -60,3 +60,23 @@ def insert_article(conn: Connection, article: Article):
     }
 
     conn.run(query_str, **param_kwargs)
+
+
+def select_article(conn: Connection, id_: str) -> Article | None:
+    """
+    Selects a row from the Article table by its ID.
+    """
+
+    query_str = "SELECT id, title, created_at, updated_at FROM Article WHERE id=(:id)"
+
+    res = conn.run(query_str, id=id_)
+
+    if len(res) > 0:
+        return Article(
+            id_=res[0][0],
+            title=res[0][1],
+            created_at=res[0][2],
+            updated_at=res[0][3],
+        )
+    else:
+        return None

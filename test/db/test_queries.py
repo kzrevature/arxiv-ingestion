@@ -7,7 +7,13 @@ from testcontainers.postgres import PostgresContainer
 
 from article import Article
 from db.connection import Pg8000Connection
-from db.queries import create_article_table, drop_article_table, insert_article
+from db.queries import (
+    PG_TIME_FMT,
+    create_article_table,
+    drop_article_table,
+    insert_article,
+    select_article,
+)
 
 
 @pytest.fixture(scope="module")
@@ -94,3 +100,28 @@ def test_insert_article_fails_on_duplicate_id(conn):
 
     with pytest.raises(DatabaseError):
         insert_article(conn, article_2)
+
+
+def test_select_article(conn):
+    id_ = "math/123"
+    title = "Math and Math and Math"
+    created_at = datetime(2007, 6, 6)
+    updated_at = datetime(2007, 7, 7)
+
+    create_article_table(conn)
+    conn.run(
+        "INSERT INTO Article (id, title, created_at, updated_at) "
+        f"VALUES ('{id_}', '{title}', '{created_at.strftime(PG_TIME_FMT)}', '{updated_at.strftime(PG_TIME_FMT)}');"
+    )
+    actual = select_article(conn, id_)
+
+    assert actual.id == id_
+    assert actual.title == title
+    assert actual.created_at == created_at
+    assert actual.updated_at == updated_at
+
+
+def test_select_article_returns_none_on_nohit(conn):
+    create_article_table(conn)
+    result = select_article(conn, "nonexistent_id")
+    assert result is None
