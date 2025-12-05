@@ -1,3 +1,4 @@
+import logging
 import time
 from datetime import datetime
 from typing import Generator
@@ -9,6 +10,8 @@ from arxiv.parser import (
     parse_entry_to_article,
 )
 from arxiv.request import fetch_articles_from_arxiv_api
+
+LOG = logging.getLogger()
 
 
 def fetch_articles(start_time: datetime, end_time: datetime) -> Generator[Article]:
@@ -22,13 +25,12 @@ def fetch_articles(start_time: datetime, end_time: datetime) -> Generator[Articl
 
     api_rate_limit_seconds = 3
 
-    # Uses a janky 'pagination' system where articles are retrieved 1000 at a time and
-    # sorted by date ascending. Subsequent queries set the start time boundary to the
-    # date of the final article from the previous response.
-    # Iteration stops once the amount of articles in the actual response matches the total
-    # number of results.
+    # Use date-based 'pagination' where articles are retrieved 1000 at a time with a
+    # sliding date window. The API result provides a number for all (remaining) matches
+    # so iteration stops once this number equals the amount of articles in the actual response
     has_more_articles = True
     while has_more_articles:
+        LOG.info(f"ingesting articles from {start_time}...")
         # grab a 'page' from the api
         xml_page = fetch_articles_from_arxiv_api(start_time, end_time)
         total_matches = extract_total_results(xml_page)
