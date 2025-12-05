@@ -62,6 +62,12 @@ def parse_entry_to_article(node: ET.Element) -> ArticleParseResult:
         elif child.tag.endswith("updated"):
             updated_at = datetime.strptime(child.text, XML_TIME_FMT)
 
+    if created_at > updated_at:
+        LOG.warning(
+            f"arXiv entry has invalid timestamps: published > updated for id {id_}"
+        )
+        return ArticleParseResult(False, None, url)
+
     return ArticleParseResult(True, Article(id_, title, created_at, updated_at), url)
 
 

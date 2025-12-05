@@ -211,3 +211,12 @@ def test_parse_entry_to_article_success(sample_arxiv_xml_root):
         and el.tag.endswith("updated")
         for el in sample_arxiv_xml_entry
     )
+
+
+# TODO: write these tests, they need a corrupted XML
+def test_parse_entry_to_article_rejects_invalid_timestamps():
+    pass
+
+
+def test_parse_entry_to_article_rejects_invalid_id():
+    pass
