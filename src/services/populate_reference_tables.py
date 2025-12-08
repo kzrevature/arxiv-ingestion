@@ -1,6 +1,6 @@
 from db.connection import Pg8000Connection
 from db.queries import create_category_table, insert_categories
-from utils.load_categories import load_categories
+from utils.categories import load_categories
 
 
 def populate_category_table():

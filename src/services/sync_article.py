@@ -7,7 +7,7 @@ from db.queries import (
     select_article,
     update_article,
 )
-from utils.load_categories import build_category_id_reference_dict
+from utils.categories import build_category_id_reference_dict
 
 CATEGORY_CODE_TO_ID = build_category_id_reference_dict()
 
