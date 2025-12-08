@@ -1,6 +1,15 @@
 from article import Article
 from db.connection import Connection
-from db.queries import insert_article, select_article, update_article
+from db.queries import (
+    delete_article_category_for_article,
+    insert_article,
+    insert_article_category,
+    select_article,
+    update_article,
+)
+from utils.load_categories import build_category_id_reference_dict
+
+CATEGORY_CODE_TO_ID = build_category_id_reference_dict()
 
 
 def sync_article(conn: Connection, article: Article):
@@ -29,3 +38,8 @@ def sync_article(conn: Connection, article: Article):
 
     else:
         insert_article(conn, article)
+
+    # handle category updates
+    delete_article_category_for_article(conn, article.id)
+    for category in article.categories:
+        insert_article_category(conn, article.id, CATEGORY_CODE_TO_ID[category])

@@ -211,6 +211,17 @@ def test_parse_entry_to_article_success(sample_arxiv_xml_root):
         and el.tag.endswith("updated")
         for el in sample_arxiv_xml_entry
     )
+    assert any(
+        article.abstract == el.text and el.tag.endswith("summary")
+        for el in sample_arxiv_xml_entry
+    )
+    assert all(
+        any(
+            el.tag.endswith("category") and cat == el.get("term")
+            for el in sample_arxiv_xml_entry
+        )
+        for cat in article.categories
+    )
 
 
 # TODO: write these tests, they need a corrupted XML

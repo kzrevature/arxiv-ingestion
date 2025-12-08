@@ -14,7 +14,7 @@ def drop_article_table(conn: Connection):
     Fails silently (no-op) if the table does not exist.
     """
 
-    query_str = "DROP TABLE IF EXISTS Article;"
+    query_str = "DROP TABLE IF EXISTS Article CASCADE;"
     conn.run(query_str)
 
 
@@ -165,3 +165,46 @@ def insert_categories(conn: Connection, categories: list[dict]):
 
     for cat in categories:
         conn.run(query_str, id=cat["id"], code=cat["code"], name=cat["name"])
+
+
+def create_article_category_table(conn: Connection):
+    """
+    Builds the join table between Article and Category
+
+    Fails silently if the table already exists.
+    """
+
+    query_str = (
+        "CREATE TABLE IF NOT EXISTS Article_Category ("
+        "   article_id     VARCHAR(20),"
+        "   category_id    INTEGER,"
+        ""
+        "   FOREIGN KEY (article_id) REFERENCES Article (id),"
+        "   FOREIGN KEY (category_id) REFERENCES Category (id)"
+        ");"
+    )
+
+    conn.run(query_str)
+
+
+def insert_article_category(conn: Connection, article_id: str, category_id: int):
+    """
+    Inserts a join entry between an article (id) and category (id)
+    """
+
+    query_str = (
+        "INSERT INTO Article_Category (article_id, category_id) "
+        "VALUES (:article_id, :category_id);"
+    )
+
+    conn.run(query_str, article_id=article_id, category_id=category_id)
+
+
+def delete_article_category_for_article(conn: Connection, article_id: str):
+    """
+    Deletes all category join entries for a given article by article_id.
+    """
+
+    query_str = "DELETE FROM Article_Category WHERE article_id=:article_id;"
+
+    conn.run(query_str, article_id=article_id)

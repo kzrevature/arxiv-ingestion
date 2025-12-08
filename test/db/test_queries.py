@@ -9,10 +9,12 @@ from article import Article
 from db.connection import Pg8000Connection
 from db.queries import (
     PG_TIME_FMT,
+    create_article_category_table,
     create_article_table,
     create_category_table,
     drop_article_table,
     insert_article,
+    insert_article_category,
     insert_categories,
     select_article,
     select_most_recent_updated_at,
@@ -272,3 +274,79 @@ def test_insert_categories_errors_with_duplicate_code(conn):
     create_category_table(conn)
     with pytest.raises(DatabaseError):
         insert_categories(conn, [cat_1, cat_2])
+
+
+def test_create_article_category_table(conn):
+    expected = []
+
+    create_article_table(conn)
+    create_category_table(conn)
+    create_article_category_table(conn)
+
+    actual = conn.run("SELECT * FROM Article_Category;")
+    assert expected == actual
+
+
+def test_create_article_category_table_noops_if_exists(conn):
+    create_article_table(conn)
+    create_category_table(conn)
+
+    create_article_category_table(conn)
+
+    # does not raise an exception
+    create_article_category_table(conn)
+
+
+def test_insert_article_category(conn):
+    article_id = "abc"
+    article_title = "A B C"
+    category_id = 555
+    category_name = "Alphabet"
+    article = Article(article_id, article_title, datetime(1, 1, 1), datetime(1, 1, 1))
+
+    create_article_table(conn)
+    create_category_table(conn)
+    create_article_category_table(conn)
+
+    insert_categories(conn, [{"id": category_id, "code": "alp", "name": category_name}])
+    insert_article(conn, article)
+
+    expected_join = [[article_title, category_name]]
+
+    insert_article_category(conn, article_id, category_id)
+
+    actual_join = conn.run(
+        "SELECT a.title, c.name "
+        "FROM Article a "
+        "JOIN Article_Category ac ON a.id = ac.article_id "
+        "JOIN Category c ON c.id = ac.category_id;"
+    )
+
+    assert actual_join == expected_join
+
+
+def test_insert_article_category_fails_if_article_does_not_exist(conn):
+    category_id = 555
+
+    create_article_table(conn)
+    create_category_table(conn)
+    create_article_category_table(conn)
+
+    insert_categories(conn, [{"id": category_id, "code": "a", "name": "ABC"}])
+
+    with pytest.raises(DatabaseError):
+        insert_article_category(conn, "not_an_id", category_id)
+
+
+def test_insert_article_category_fails_if_category_does_not_exist(conn):
+    article_id = 555
+    article = Article(article_id, "abc", datetime(7, 7, 7), datetime(7, 7, 7))
+
+    create_article_table(conn)
+    create_category_table(conn)
+    create_article_category_table(conn)
+
+    insert_article(conn, article)
+
+    with pytest.raises(DatabaseError):
+        insert_article_category(conn, article_id, 4040404)

@@ -47,6 +47,7 @@ def parse_entry_to_article(node: ET.Element) -> ArticleParseResult:
     Takes as input an XML <entry> element representing an arXiv article, and extracts
     the relevant fields into an Article object.
     """
+    categories = []
     for child in node:
         if child.tag.endswith("id"):
             url = child.text
@@ -61,6 +62,10 @@ def parse_entry_to_article(node: ET.Element) -> ArticleParseResult:
             created_at = datetime.strptime(child.text, XML_TIME_FMT)
         elif child.tag.endswith("updated"):
             updated_at = datetime.strptime(child.text, XML_TIME_FMT)
+        elif child.tag.endswith("category"):
+            categories.append(child.get("term"))
+        elif child.tag.endswith("summary"):
+            abstract = child.text
 
     if created_at > updated_at:
         LOG.warning(
@@ -68,7 +73,18 @@ def parse_entry_to_article(node: ET.Element) -> ArticleParseResult:
         )
         return ArticleParseResult(False, None, url)
 
-    return ArticleParseResult(True, Article(id_, title, created_at, updated_at), url)
+    return ArticleParseResult(
+        True,
+        Article(
+            id_,
+            title,
+            created_at,
+            updated_at,
+            categories,
+            abstract,
+        ),
+        url,
+    )
 
 
 def validate_arxiv_id_old_fmt(id_: str) -> bool:
