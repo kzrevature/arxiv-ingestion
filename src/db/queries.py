@@ -6,7 +6,6 @@ from db.connection import Connection
 PG_TIME_FMT = "%Y-%m-%d %H:%M:%S"
 
 
-# drops Article table
 def drop_article_table(conn: Connection):
     """
     Drops the Article table.
@@ -15,6 +14,28 @@ def drop_article_table(conn: Connection):
     """
 
     query_str = "DROP TABLE IF EXISTS Article CASCADE;"
+    conn.run(query_str)
+
+
+def drop_category_table(conn: Connection):
+    """
+    Drops the Category table.
+
+    Fails silently (no-op) if the table does not exist.
+    """
+
+    query_str = "DROP TABLE IF EXISTS Category CASCADE;"
+    conn.run(query_str)
+
+
+def drop_keyword_table(conn: Connection):
+    """
+    Drops the Keyword table.
+
+    Fails silently (no-op) if the table does not exist.
+    """
+
+    query_str = "DROP TABLE IF EXISTS Keyword CASCADE;"
     conn.run(query_str)
 
 
@@ -206,5 +227,94 @@ def delete_article_category_for_article(conn: Connection, article_id: str):
     """
 
     query_str = "DELETE FROM Article_Category WHERE article_id=:article_id;"
+
+    conn.run(query_str, article_id=article_id)
+
+
+def create_keyword_table(conn: Connection):
+    """
+    Creates the keyword reference table.
+
+    Fails silently if the table already exists.
+    """
+
+    query_str = (
+        "CREATE TABLE IF NOT EXISTS Keyword ("
+        "   id             INTEGER PRIMARY KEY,"
+        "   name           VARCHAR(40)"
+        ");"
+    )
+
+    conn.run(query_str)
+
+
+def insert_keywords(conn: Connection, keywords: list[dict]):
+    """
+    Inserts a list of keywords as records into the Keyword table.
+
+    Input is a list of dicts, with keys 'id' and 'name'.
+    """
+
+    query_str = "INSERT INTO Keyword (id, name) VALUES (:id, :name);"
+
+    for kw in keywords:
+        conn.run(query_str, id=kw["id"], name=kw["name"])
+
+
+def create_keyword_occurrence_table(conn: Connection):
+    """
+    Builds the occurrence table tracking keyword usage in articles.
+
+    Schema:
+        article_id:     VARCHAR(20)
+        keyword_id:     INTEGER
+        total:          INTEGER
+
+    Fails silently if the table already exists.
+    """
+
+    query_str = (
+        "CREATE TABLE IF NOT EXISTS KeywordOccurrence ("
+        "   article_id     VARCHAR(20),"
+        "   keyword_id     INTEGER,"
+        "   total          INTEGER,"
+        ""
+        "   FOREIGN KEY (article_id) REFERENCES Article (id),"
+        "   FOREIGN KEY (keyword_id) REFERENCES Keyword (id)"
+        ");"
+    )
+
+    conn.run(query_str)
+
+
+def insert_keyword_occurrence(
+    conn: Connection,
+    article_id: str,
+    keyword_id: int,
+    total: int,
+):
+    """
+    Inserts an occurrence entry for a specific article/keyword.
+    """
+
+    query_str = (
+        "INSERT INTO KeywordOccurrence (article_id, keyword_id, total) "
+        "VALUES (:article_id, :keyword_id, :total);"
+    )
+
+    conn.run(
+        query_str,
+        article_id=article_id,
+        keyword_id=keyword_id,
+        total=total,
+    )
+
+
+def delete_keyword_occurrences_for_article(conn: Connection, article_id: str):
+    """
+    Deletes all occurrences entries for a given keyword by article_id.
+    """
+
+    query_str = "DELETE FROM KeywordOccurrence WHERE article_id=:article_id;"
 
     conn.run(query_str, article_id=article_id)

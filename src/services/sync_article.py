@@ -2,12 +2,15 @@ from article import Article
 from db.connection import Connection
 from db.queries import (
     delete_article_category_for_article,
+    delete_keyword_occurrences_for_article,
     insert_article,
     insert_article_category,
+    insert_keyword_occurrence,
     select_article,
     update_article,
 )
 from utils.categories import build_category_id_reference_dict
+from utils.keywords import count_keyword_occurrences
 
 CATEGORY_CODE_TO_ID = build_category_id_reference_dict()
 
@@ -43,3 +46,9 @@ def sync_article(conn: Connection, article: Article):
     delete_article_category_for_article(conn, article.id)
     for category in article.categories:
         insert_article_category(conn, article.id, CATEGORY_CODE_TO_ID[category])
+
+    # handle keyword updates
+    delete_keyword_occurrences_for_article(conn, article.id)
+    keyword_occurences = count_keyword_occurrences(article.abstract)
+    for kw_id, total in keyword_occurences.items():
+        insert_keyword_occurrence(conn, article.id, kw_id, total)
