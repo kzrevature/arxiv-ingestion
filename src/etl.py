@@ -3,6 +3,8 @@ import xml.etree.ElementTree as ET
 from datetime import datetime
 from uuid import uuid4
 
+from pg8000 import DatabaseError
+
 from arxiv.parser import parse_entry_to_article
 from db.connection import Pg8000Connection
 from db.queries import select_most_recent_updated_at
@@ -43,7 +45,8 @@ def etl_backfill(backfill_start: datetime, backfill_end: datetime):
         # transform and persist
         try:
             sync_article(conn, article)
-        except ValueError:
+        except (DatabaseError, ValueError):
+            conn.run("ROLLBACK;")
             reject_filepath = f"{LOG_REJECTED_DIR}/{str(uuid4())}"
             LOG.error(
                 f"ERR: Failed to persist record, storing failed xml in {reject_filepath}\n"
