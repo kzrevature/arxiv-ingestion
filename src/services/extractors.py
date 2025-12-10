@@ -32,7 +32,11 @@ def fetch_article_entries(
     while has_more_articles:
         LOG.info(f"ingesting articles from {start_time}...")
         # fetch a page from the api
-        xml_page = fetch_articles_from_arxiv_api(start_time, end_time)
+        try:
+            xml_page = fetch_articles_from_arxiv_api(start_time, end_time)
+        except ET.ParseError:
+            LOG.error("arXiv API is malfunctioning")
+            break
         total_matches = extract_total_results(xml_page)
         page_entries = extract_article_entries(xml_page)
 
